@@ -51,7 +51,7 @@ struct FocusStateTests {
         var state = FocusState()
         state.observeInput(at: evening, calendar: calendar)
         state.start(at: evening, calendar: calendar)
-        // Studying past 01:00 keeps the session once input history exists.
+        // Studying past the study-day boundary keeps the session once input history exists.
         for second in stride(from: 10, through: 3 * 3600, by: 10) {
             state.tick(at: evening.addingTimeInterval(Double(second)), calendar: calendar)
         }
@@ -69,7 +69,6 @@ struct FocusStateTests {
         expectEqual(state.sessionSeconds, 0)
         expectEqual(state.resumeWhenActive, false)
         expectEqual(state.phase, .idle)
-        expectEqual(state.lastSleep?.duration, 7 * 3600)
         expectEqual(state.secondsByDay.values.reduce(0, +), 3 * 3600)
         let restored = try JSONDecoder().decode(FocusState.self, from: JSONEncoder().encode(state))
         expectEqual(restored, state)
@@ -85,7 +84,7 @@ struct FocusStateTests {
     func testWasteHourlyStorage() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-        for boundary in [86400.0, 90000.0, 93600.0] {
+        for boundary in [86400.0, 104400.0, 93600.0] {
             var tracker = WasteTimeTracker()
             var ledger = WasteTimeState()
             let start = Date(timeIntervalSince1970: boundary - 2)
@@ -156,14 +155,14 @@ struct FocusStateTests {
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         var tracker = WasteTimeTracker()
         var ledger = WasteTimeState()
-        let start = Date(timeIntervalSince1970: 89990) // 00:59:50
+        let start = Date(timeIntervalSince1970: 104390) // 04:59:50
         for second in stride(from: 0, through: 20, by: 2) {
             tracker.observe(at: start.addingTimeInterval(Double(second)), site: .douyu,
                 idle: 0, state: &ledger, calendar: calendar)
         }
         expectEqual(ledger.seconds(on: "1970-01-01"), 10)
         expectEqual(ledger.seconds(on: "1970-01-02"), 10)
-        // No further input: roll back all sites, even when the idle cutoff crosses 01:00.
+        // No further input: roll back all sites, even when the idle cutoff crosses 05:00.
         tracker = WasteTimeTracker()
         ledger = WasteTimeState()
         for second in stride(from: 0, through: 304, by: 2) {
@@ -192,7 +191,7 @@ struct FocusStateTests {
     func testStudyDayAndRelaunch() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-        let before = Date(timeIntervalSince1970: 89998) // Jan 2, 00:59:58 UTC
+        let before = Date(timeIntervalSince1970: 104398) // Jan 2, 04:59:58 UTC
         let after = before.addingTimeInterval(5)
         expectEqual(StudyDay.key(for: before, calendar: calendar), "1970-01-01")
         expectEqual(StudyDay.key(for: after, calendar: calendar), "1970-01-02")
@@ -261,13 +260,16 @@ struct FocusStateTests {
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         var state = FocusState()
         state.secondsByDay = ["1970-01-01": 150, "1970-01-02": 100]
-        state.secondsByHour = ["1970-01-01": ["23": 100], "1970-01-02": ["0": 40, "1": 60]]
+        state.secondsByHour = ["1970-01-01": ["23": 100], "1970-01-02": ["2": 30, "4": 10, "5": 60]]
         expectEqual(state.studySecondsByDay(calendar: calendar)["1970-01-01"], 190)
         expectEqual(state.studySecondsByDay(calendar: calendar)["1970-01-02"], 60)
         expectEqual(state.studySecondsByDay(calendar: calendar).values.reduce(0, +), 250)
-        expectEqual(state.studyHours(at: Date(timeIntervalSince1970: 86400), calendar: calendar)["0"], 40)
+        expectEqual(state.studyHours(at: Date(timeIntervalSince1970: 86400), calendar: calendar)["2"], 30)
+        expectEqual(state.studyHours(at: Date(timeIntervalSince1970: 86400), calendar: calendar)["5"], nil)
+        // Cramming until 02:00 counts toward the previous day.
+        expectEqual(StudyDay.key(for: Date(timeIntervalSince1970: 86400 + 7200), calendar: calendar), "1970-01-01")
         state = FocusState()
-        let start = Date(timeIntervalSince1970: 89820) // 00:57:00
+        let start = Date(timeIntervalSince1970: 104220) // 04:57:00
         state.start(at: start, calendar: calendar)
         for second in 1...360 { state.tick(at: start.addingTimeInterval(Double(second)), calendar: calendar) }
         expectEqual(state.sessionSeconds, 180)

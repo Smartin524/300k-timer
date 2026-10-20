@@ -128,14 +128,8 @@ struct PanelView: View {
                 }
             }
             HourlyActivityView(state: store.state)
-            HStack {
-                Text("最近睡眠").foregroundStyle(.secondary)
-                Spacer()
-                Text(sleepText).monospacedDigit()
-            }
-            .font(.system(size: 11))
-            .help("4 小时以上无键鼠操作且跨过凌晨，视为睡眠；醒来后本次计时自动清零")
             Divider()
+            LoginItemToggle().font(.system(size: 11))
             HStack(spacing: 12) {
                 Picker("闲置暂停", selection: Binding(get: { store.state.settings.idleMinutes }, set: { value in
                     store.updateSettings { $0.idleMinutes = value }
@@ -153,14 +147,6 @@ struct PanelView: View {
         }
         .font(.system(size: 12))
         .padding(.horizontal, 16).padding(.bottom, 14)
-    }
-}
-
-private extension PanelView {
-    var sleepText: String {
-        guard let sleep = store.state.lastSleep else { return "尚未检测到" }
-        let format = Date.FormatStyle().hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
-        return "\(sleep.start.formatted(format))–\(sleep.end.formatted(format)) · \(TimeText.compact(sleep.duration))"
     }
 }
 

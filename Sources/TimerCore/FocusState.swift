@@ -31,7 +31,6 @@ public struct FocusState: Codable, Equatable, Sendable {
     public var sessionHasStarted: Bool?
     /// Coarse last-input time (about a minute's resolution), used only for sleep detection.
     public private(set) var lastInputAt: Date?
-    public private(set) var lastSleep: SleepInterval?
     public var phase: FocusPhase {
         if isRunning { return .running }
         return (sessionHasStarted ?? (sessionSeconds > 0)) ? .paused : .idle
@@ -56,11 +55,14 @@ public struct FocusState: Codable, Equatable, Sendable {
         let start = StudyDay.start(for: now)
         let day = Self.dayKey(start)
         let next = Self.dayKey(Calendar.current.date(byAdding: .day, value: 1, to: start)!)
-        return max(0, secondsByDay[day, default: 0] - (secondsByHour?[day]?["0"] ?? 0))
-            + (secondsByHour?[next]?["0"] ?? 0)
+        return max(0, secondsByDay[day, default: 0] - earlySeconds(on: day)) + earlySeconds(on: next)
     }
 
-    /// Keep the stored calendar-day ledger unchanged, and regroup known midnight hours.
+    private func earlySeconds(on day: String) -> TimeInterval {
+        StudyDay.earlyHours.reduce(0) { $0 + (secondsByHour?[day]?[$1] ?? 0) }
+    }
+
+    /// Keep the stored calendar-day ledger unchanged, and regroup known pre-boundary hours.
     /// Older totals without hourly detail are preserved rather than guessed.
     public func studySecondsByDay(calendar: Calendar = .current) -> [String: TimeInterval] {
         var totals = secondsByDay
@@ -69,9 +71,9 @@ public struct FocusState: Codable, Equatable, Sendable {
             guard components.count == 3,
                   let date = calendar.date(from: DateComponents(year: components[0], month: components[1], day: components[2])),
                   let previous = calendar.date(byAdding: .day, value: -1, to: date) else { continue }
-            let midnight = min(hours["0", default: 0], secondsByDay[day, default: 0])
-            totals[day, default: 0] -= midnight
-            totals[Self.dayKey(previous, calendar: calendar), default: 0] += midnight
+            let early = min(StudyDay.earlyHours.reduce(0) { $0 + hours[$1, default: 0] }, secondsByDay[day, default: 0])
+            totals[day, default: 0] -= early
+            totals[Self.dayKey(previous, calendar: calendar), default: 0] += early
         }
         return totals
     }
@@ -80,7 +82,8 @@ public struct FocusState: Codable, Equatable, Sendable {
         let start = StudyDay.start(for: date, calendar: calendar)
         let next = calendar.date(byAdding: .day, value: 1, to: start)!
         var hours = secondsByHour?[Self.dayKey(start, calendar: calendar)] ?? [:]
-        hours["0"] = secondsByHour?[Self.dayKey(next, calendar: calendar)]?["0"] ?? 0
+        let nextHours = secondsByHour?[Self.dayKey(next, calendar: calendar)] ?? [:]
+        for hour in StudyDay.earlyHours { hours[hour] = nextHours[hour] ?? 0 }
         return hours
     }
 
@@ -116,7 +119,6 @@ public struct FocusState: Codable, Equatable, Sendable {
         guard input.timeIntervalSince(previous) >= 60 else { return false }
         lastInputAt = input
         guard SleepPolicy.isNightSleep(from: previous, to: input, calendar: calendar) else { return false }
-        lastSleep = SleepInterval(start: previous, end: input)
         resetSession()
         resumeWhenActive = false
         sessionDay = StudyDay.key(for: input, calendar: calendar)

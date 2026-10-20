@@ -1,11 +1,5 @@
 import Foundation
 
-public struct SleepInterval: Codable, Equatable, Sendable {
-    public var start: Date
-    public var end: Date
-    public var duration: TimeInterval { end.timeIntervalSince(start) }
-}
-
 /// A night's sleep: at least four hours without input, at least one of them
 /// inside local 00:00–08:00. Long afternoon or evening absences do not qualify.
 public enum SleepPolicy {

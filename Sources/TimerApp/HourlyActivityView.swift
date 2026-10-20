@@ -33,7 +33,7 @@ struct HourlyActivityView: View {
                     Text("60")
                 }.font(.system(size: 9)).foregroundStyle(.tertiary)
                 HStack(alignment: .bottom, spacing: 3) {
-                    ForEach(Array(1...23) + [0], id: \.self) { hour in
+                    ForEach(Array(StudyDay.boundaryHour...23) + Array(0..<StudyDay.boundaryHour), id: \.self) { hour in
                         let study = hours[String(hour), default: 0]
                         let waste = wasteHours[String(hour), default: 0]
                         HStack(alignment: .bottom, spacing: 1) {
@@ -49,9 +49,9 @@ struct HourlyActivityView: View {
                 }.frame(height: 64)
                     .background(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.12)).frame(height: 0.5) }
                 HStack {
-                    ForEach(["01", "06", "12", "18", "次日01"], id: \.self) { label in
+                    ForEach(["05", "12", "18", "00", "次日05"], id: \.self) { label in
                         Text(label)
-                        if label != "次日01" { Spacer() }
+                        if label != "次日05" { Spacer() }
                     }
                 }.font(.system(size: 9)).monospacedDigit().foregroundStyle(.secondary)
             }
