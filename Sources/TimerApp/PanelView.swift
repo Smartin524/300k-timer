@@ -123,7 +123,10 @@ struct PanelView: View {
                                     Text(TimeText.clock(record.seconds)).monospacedDigit()
                                 }.font(.system(size: 12))
                             }
-                        }.padding(.vertical, 3)
+                        }
+                        .padding(.vertical, 3)
+                        // Leave a gutter so the overlay scroller never covers the durations.
+                        .padding(.trailing, 14)
                     }.frame(height: min(84, CGFloat(records.count) * 26))
                 }
             }
