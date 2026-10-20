@@ -125,9 +125,10 @@ struct PanelView: View {
                             }
                         }
                         .padding(.vertical, 3)
-                        // Leave a gutter so the overlay scroller never covers the durations.
-                        .padding(.trailing, 14)
-                    }.frame(height: min(84, CGFloat(records.count) * 26))
+                    }
+                    // Hidden so the durations stay aligned with the total above; the cut-off row hints at more.
+                    .scrollIndicators(.hidden)
+                    .frame(height: min(84, CGFloat(records.count) * 26))
                 }
             }
             HourlyActivityView(state: store.state)
