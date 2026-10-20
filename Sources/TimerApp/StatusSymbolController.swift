@@ -41,7 +41,9 @@ final class StatusSymbolController {
             button?.image = nil
             imageView.isHidden = false
             imageView.image = symbol
-            imageView.contentTintColor = phase == .running ? .systemGreen : .systemOrange
+            // Softened toward white so the state reads without shouting in the menu bar.
+            let base: NSColor = phase == .running ? .systemGreen : .systemOrange
+            imageView.contentTintColor = base.blended(withFraction: 0.35, of: .white) ?? base
         }
         button?.setAccessibilityLabel("300k Timer，" + phase.title)
         button?.toolTip = phase.title + " · 点击打开"
