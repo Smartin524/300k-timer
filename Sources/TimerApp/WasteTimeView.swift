@@ -10,7 +10,6 @@ extension Color {
 struct WasteTimeView: View {
     let ledger: WasteTimeState
     let activeSite: WasteSite?
-    let studySeconds: TimeInterval
 
     private var day: String { StudyDay.key(for: Date()) }
     private var today: TimeInterval { ledger.seconds(on: day) }
@@ -33,7 +32,6 @@ struct WasteTimeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
-            comparison
             breakdown
             Divider()
             weekChart
@@ -44,7 +42,7 @@ struct WasteTimeView: View {
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("今日垃圾时间").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text("今日摸鱼时间").font(.system(size: 11)).foregroundStyle(.secondary)
                 DurationText(seconds: today, size: 30)
             }
             Spacer()
@@ -62,39 +60,10 @@ struct WasteTimeView: View {
         }
     }
 
-    /// Study vs. waste for today as one proportional bar.
-    private var comparison: some View {
-        let total = studySeconds + today
-        return VStack(alignment: .leading, spacing: 5) {
-            GeometryReader { proxy in
-                HStack(spacing: total > 0 && studySeconds > 0 && today > 0 ? 2 : 0) {
-                    if total == 0 {
-                        Capsule().fill(Color.primary.opacity(0.08))
-                    } else {
-                        if studySeconds > 0 {
-                            Capsule().fill(Color.studyTime).frame(width: max(3, proxy.size.width * studySeconds / total))
-                        }
-                        if today > 0 { Capsule().fill(Color.wasteTime) }
-                    }
-                }
-            }.frame(height: 5)
-            HStack {
-                label("学习", TimeText.compact(studySeconds), color: .studyTime)
-                Spacer()
-                if total > 0 {
-                    Text("垃圾占 \(Int((today / total * 100).rounded()))%")
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                label("垃圾", TimeText.compact(today), color: .wasteTime)
-            }.font(.system(size: 10)).monospacedDigit()
-        }
-    }
-
     private var breakdown: some View {
         VStack(spacing: 9) {
             if sites.isEmpty {
-                Text("今天还没有垃圾时间")
+                Text("今天还没有摸鱼")
                     .font(.system(size: 12)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 28)
             } else {
@@ -147,17 +116,9 @@ struct WasteTimeView: View {
                     .contentShape(Rectangle())
                     .help("\(entry.day) · \(TimeText.clock(entry.seconds))")
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("\(entry.day) 垃圾时间 \(TimeText.compact(entry.seconds))")
+                    .accessibilityLabel("\(entry.day) 摸鱼时间 \(TimeText.compact(entry.seconds))")
                 }
             }
-        }
-    }
-
-    private func label(_ title: String, _ value: String, color: Color) -> some View {
-        HStack(spacing: 4) {
-            Circle().fill(color).frame(width: 5, height: 5)
-            Text(title).foregroundStyle(.secondary)
-            Text(value)
         }
     }
 }

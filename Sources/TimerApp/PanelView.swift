@@ -17,16 +17,15 @@ struct PanelView: View {
                     }
                 } else {
                     HStack(spacing: 4) {
+                        headerButton("fish", label: "摸鱼时间") { store.showsWasteTime = true }
                         headerButton("gearshape", label: "设置") { store.showsSettings = true }
-                        headerButton("trash", label: "垃圾时间") { store.showsWasteTime = true }
                     }
                 }
             }.padding(.horizontal, 16).padding(.top, 10)
 
             if store.showsSettings { settings.padding(.top, 12) }
             else if store.showsWasteTime {
-                WasteTimeView(ledger: store.state.wasteTime ?? WasteTimeState(), activeSite: store.wasteSite,
-                              studySeconds: store.today)
+                WasteTimeView(ledger: store.state.wasteTime ?? WasteTimeState(), activeSite: store.wasteSite)
             } else { timer }
 
             if let message = store.storageError ?? store.websiteWarning {

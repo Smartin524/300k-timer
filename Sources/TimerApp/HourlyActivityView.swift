@@ -24,7 +24,7 @@ struct HourlyActivityView: View {
             }.buttonStyle(QuietHoverButtonStyle()).font(.system(size: 10)).foregroundStyle(.secondary)
             HStack(spacing: 12) {
                 legend("学习", color: .studyTime)
-                legend("垃圾时间", color: .wasteTime)
+                legend("摸鱼时间", color: .wasteTime)
             }.font(.system(size: 9)).foregroundStyle(.secondary)
             VStack(spacing: 3) {
                 HStack {
@@ -42,9 +42,9 @@ struct HourlyActivityView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                         .contentShape(Rectangle())
-                        .help(String(format: "%02d:00–%02d:00 · 学习 %@ · 垃圾时间 %@", hour, hour + 1, TimeText.clock(study), TimeText.clock(waste)))
+                        .help(String(format: "%02d:00–%02d:00 · 学习 %@ · 摸鱼时间 %@", hour, hour + 1, TimeText.clock(study), TimeText.clock(waste)))
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(hour)点至\(hour + 1)点，学习\(Int(study / 60))分钟，垃圾时间\(Int(waste / 60))分钟")
+                        .accessibilityLabel("\(hour)点至\(hour + 1)点，学习\(Int(study / 60))分钟，摸鱼时间\(Int(waste / 60))分钟")
                     }
                 }.frame(height: 64)
                     .background(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.12)).frame(height: 0.5) }
