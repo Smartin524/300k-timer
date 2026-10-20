@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import Combine
 import TimerCore
+import Carbon.HIToolbox
 
 @main
 struct TimerApplication {
@@ -26,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var noticeSizing: AnyCancellable?
     private var wasteSizing: AnyCancellable?
     private var pendingPanelRequest = false
+    private var toggleHotKey: GlobalHotKey?
     /// The panel was raised by an automatic pause, not by the user.
     private var panelShownForPause = false
     private var briefDismissal: DispatchWorkItem?
@@ -33,6 +35,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         LoginItem.applyDefault()
+        // ⌥T starts or pauses from anywhere, the same as the panel's main button.
+        toggleHotKey = GlobalHotKey(keyCode: kVK_ANSI_T, modifiers: optionKey) { [weak self] in self?.store.toggle() }
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
             button.target = self

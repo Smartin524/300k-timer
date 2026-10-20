@@ -84,7 +84,7 @@ struct PanelView: View {
         }
         .buttonStyle(SolidIconButtonStyle(tint: store.state.isRunning ? .orange : .green))
         .accessibilityLabel(store.state.isRunning ? "暂停" : "开始或继续")
-        .help(store.state.isRunning ? "暂停" : "开始或继续")
+        .help(store.state.isRunning ? "暂停（⌥T）" : "开始或继续（⌥T）")
         .keyboardShortcut(.space, modifiers: [])
     }
 
