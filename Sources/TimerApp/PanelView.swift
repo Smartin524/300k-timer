@@ -18,7 +18,7 @@ struct PanelView: View {
                 } else {
                     HStack(spacing: 4) {
                         headerButton("fish", label: "摸鱼时间") { store.showsWasteTime = true }
-                        headerButton("gearshape", label: "设置") { store.showsSettings = true }
+                        headerButton("chart.bar.xaxis", label: "统计") { store.showsSettings = true }
                     }
                 }
             }.padding(.horizontal, 16).padding(.top, 10)
