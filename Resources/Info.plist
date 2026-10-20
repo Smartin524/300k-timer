@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>zh_CN</string>
+	<key>CFBundleDisplayName</key>
+	<string>300k Timer</string>
+	<key>CFBundleExecutable</key>
+	<string>300KTimer</string>
+	<key>CFBundleIconFile</key>
+	<string>HourglassGreen</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.smartin.300ktimer</string>
+	<key>CFBundleName</key>
+	<string>300k Timer</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.smartin.300ktimer</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>timer300k</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>3</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>读取 Chrome 当前标签页网址，在浏览指定网站时暂停计时。网址仅本机匹配，不保存或上传。</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+</dict>
+</plist>

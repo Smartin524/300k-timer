@@ -1,0 +1,205 @@
+import SwiftUI
+import TimerCore
+
+struct PanelView: View {
+    @ObservedObject var store: FocusStore
+    let dismissPanel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("300k Timer").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                Spacer()
+                if store.showsSettings || store.showsWasteTime {
+                    headerButton("chevron.left", label: "返回计时") {
+                        store.showsSettings = false
+                        store.showsWasteTime = false
+                    }
+                } else {
+                    HStack(spacing: 4) {
+                        headerButton("gearshape", label: "设置") { store.showsSettings = true }
+                        headerButton("trash", label: "垃圾时间") { store.showsWasteTime = true }
+                    }
+                }
+            }.padding(.horizontal, 16).padding(.top, 10)
+
+            if store.showsSettings { settings.padding(.top, 12) }
+            else if store.showsWasteTime {
+                WasteTimeView(ledger: store.state.wasteTime ?? WasteTimeState(), activeSite: store.wasteSite,
+                              studySeconds: store.today)
+            } else { timer }
+
+            if let message = store.storageError ?? store.websiteWarning {
+                Text(message).font(.caption).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 20).padding(.bottom, 16)
+            }
+        }
+        .frame(width: 260)
+
+    }
+
+    private func headerButton(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: 12)).frame(width: 24, height: 24)
+        }
+        .buttonStyle(QuietHoverButtonStyle())
+        .foregroundStyle(.secondary)
+        .accessibilityLabel(label)
+        .help(label)
+    }
+
+    private var timer: some View {
+        VStack(spacing: 12) {
+            VStack(spacing: 4) {
+                Text(TimeText.clock(store.state.sessionSeconds))
+                    .font(.system(size: 36, weight: .semibold, design: .default))
+                    .monospacedDigit()
+                    .accessibilityLabel("本次计时 \(TimeText.clock(store.state.sessionSeconds))")
+                Text(store.state.phase.title)
+                    .font(.system(size: 11, weight: .bold)).foregroundStyle(.primary)
+            }.padding(.top, 8)
+
+            // Reserve the reason row so automatic pauses never resize the panel.
+            Text(store.pauseNotice ?? " ")
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .frame(height: 14)
+                .accessibilityHidden(store.pauseNotice == nil)
+
+            HStack(spacing: 12) {
+                if store.pauseNotice != nil { keepPausedButton }
+                primaryButton
+            }
+            Text("今日 \(TimeText.compact(store.today))")
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+        }.padding(.horizontal, 16).padding(.bottom, 14)
+    }
+
+    private var primaryButton: some View {
+        Button { store.toggle() } label: {
+            Image(systemName: store.state.isRunning ? "pause.fill" : "play.fill")
+                .renderingMode(.template)
+                .font(.system(size: 15, weight: .semibold))
+                .frame(width: 40, height: 40)
+        }
+        .buttonStyle(SolidIconButtonStyle(tint: store.state.isRunning ? .orange : .green))
+        .accessibilityLabel(store.state.isRunning ? "暂停" : "开始或继续")
+        .help(store.state.isRunning ? "暂停" : "开始或继续")
+        .keyboardShortcut(.space, modifiers: [])
+    }
+
+    private var keepPausedButton: some View {
+        Button {
+            store.keepPaused()
+            dismissPanel()
+        } label: {
+            Image(systemName: "pause.fill").font(.system(size: 15, weight: .semibold))
+                .frame(width: 40, height: 40)
+        }
+        .buttonStyle(SolidIconButtonStyle(tint: .orange))
+        .accessibilityLabel("保持暂停")
+        .help("保持暂停并收起面板")
+    }
+
+    private var settings: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("历史总时长").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(TimeText.clock(store.totalSeconds))
+                    .font(.system(size: 24, weight: .light, design: .rounded)).monospacedDigit()
+            }
+            let records = store.dailyRecords
+            VStack(alignment: .leading, spacing: 8) {
+                if records.isEmpty {
+                    Text("暂无记录").font(.system(size: 12)).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 10) {
+                            ForEach(records, id: \.day) { record in
+                                HStack {
+                                    Text(record.day).foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text(TimeText.clock(record.seconds)).monospacedDigit()
+                                }.font(.system(size: 12))
+                            }
+                        }.padding(.vertical, 3)
+                    }.frame(height: min(84, CGFloat(records.count) * 26))
+                }
+            }
+            HourlyActivityView(state: store.state)
+            HStack {
+                Text("最近睡眠").foregroundStyle(.secondary)
+                Spacer()
+                Text(sleepText).monospacedDigit()
+            }
+            .font(.system(size: 11))
+            .help("4 小时以上无键鼠操作且跨过凌晨，视为睡眠；醒来后本次计时自动清零")
+            Divider()
+            HStack(spacing: 12) {
+                Picker("闲置暂停", selection: Binding(get: { store.state.settings.idleMinutes }, set: { value in
+                    store.updateSettings { $0.idleMinutes = value }
+                })) {
+                    Text("关闭").tag(0)
+                    Text("5 分钟").tag(5)
+                    Text("10 分钟").tag(10)
+                    Text("15 分钟").tag(15)
+                }.fixedSize()
+                Spacer(minLength: 0)
+                Button("退出") { NSApplication.shared.terminate(nil) }
+                    .buttonStyle(QuietHoverButtonStyle(horizontalPadding: 7))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+        }
+        .font(.system(size: 12))
+        .padding(.horizontal, 16).padding(.bottom, 14)
+    }
+}
+
+private extension PanelView {
+    var sleepText: String {
+        guard let sleep = store.state.lastSleep else { return "尚未检测到" }
+        let format = Date.FormatStyle().hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)
+        return "\(sleep.start.formatted(format))–\(sleep.end.formatted(format)) · \(TimeText.compact(sleep.duration))"
+    }
+}
+
+/// Fixed sRGB fills keep colored actions consistent across light and dark glass.
+private struct SolidIconButtonStyle: ButtonStyle {
+    enum Tint {
+        case orange, green
+
+        var color: Color {
+            switch self {
+            case .orange: return Color(.sRGB, red: 0.95, green: 0.49, blue: 0.08, opacity: 1)
+            case .green: return Color(.sRGB, red: 0.16, green: 0.73, blue: 0.32, opacity: 1)
+            }
+        }
+    }
+
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorScheme) private var colorScheme
+    let tint: Tint?
+    @State private var isHovered = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(tint == nil ? Color.primary : Color.white)
+            .background {
+                Circle().fill(tint?.color ?? Color.primary.opacity(0.10))
+                    .overlay {
+                        // Apply feedback to the fill only, keeping the glyph crisp.
+                        Circle().fill(tint == nil ? Color.primary : Color.black)
+                            .opacity(!isEnabled ? 0 : configuration.isPressed ? 0.20 :
+                                isHovered ? (colorScheme == .dark ? 0.12 : 0.08) : 0)
+                    }
+            }
+            // Flatten only the button, not the native glass backdrop.
+            .drawingGroup()
+            .opacity(isEnabled ? 1 : 0.3)
+            .contentShape(Circle())
+            .onHover { isHovered = $0 }
+            .onDisappear { isHovered = false }
+    }
+}
