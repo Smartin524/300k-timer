@@ -55,16 +55,11 @@ struct PanelView: View {
                     .font(.system(size: 36, weight: .semibold, design: .default))
                     .monospacedDigit()
                     .accessibilityLabel("本次计时 \(TimeText.clock(store.state.sessionSeconds))")
-                Text(store.state.phase.title)
+                // An automatic pause explains itself in the status line, so no row is reserved for it.
+                Text(store.pauseNotice ?? store.state.phase.title)
                     .font(.system(size: 11, weight: .bold)).foregroundStyle(.primary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }.padding(.top, 8)
-
-            // Reserve the reason row so automatic pauses never resize the panel.
-            Text(store.pauseNotice ?? " ")
-                .font(.system(size: 11)).foregroundStyle(.secondary)
-                .lineLimit(1).minimumScaleFactor(0.8)
-                .frame(height: 14)
-                .accessibilityHidden(store.pauseNotice == nil)
 
             HStack(spacing: 12) {
                 if store.pauseNotice != nil { keepPausedButton }
