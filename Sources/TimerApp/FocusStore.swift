@@ -13,6 +13,10 @@ final class FocusStore: ObservableObject {
     private let chromeMonitor = ChromeMonitor()
     private var runGeneration = 0
     @Published var showsSettings = false
+    /// History is collapsed whenever the statistics page opens.
+    @Published var showsHistory = false
+    /// Fixed idle threshold; the stored setting is kept only so older records still decode.
+    private let idleMinutes = 10
     @Published var pauseNotice: String?
     /// `brief`: show the reason only momentarily (website pauses need no decision).
     var onAutomaticPause: ((_ brief: Bool) -> Void)?
@@ -147,11 +151,6 @@ final class FocusStore: ObservableObject {
         persist()
     }
 
-    func updateSettings(_ update: (inout FocusSettings) -> Void) {
-        update(&state.settings)
-        persist()
-    }
-
     func pause(reason: String, automatic: Bool, alert: Bool = true, briefAlert: Bool = false,
                credit: Bool = true, resumeOnActivity: Bool = false) {
         if !automatic { state.cancelAutomaticResume() }
@@ -191,9 +190,9 @@ final class FocusStore: ObservableObject {
             let sessionIdle = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .null)
             let now = Date()
             let idle = min(hardwareIdle, sessionIdle, max(0, now.timeIntervalSince(lastObservedInput)))
-            if IdlePolicy.shouldPause(systemIdle: idle, runDuration: now.timeIntervalSince(monitoringStartedAt ?? now), threshold: Double(state.settings.idleMinutes * 60)) {
+            if IdlePolicy.shouldPause(systemIdle: idle, runDuration: now.timeIntervalSince(monitoringStartedAt ?? now), threshold: Double(idleMinutes * 60)) {
                 state.discardIdleTime(since: now.addingTimeInterval(-idle))
-                pause(reason: "连续 \(state.settings.idleMinutes) 分钟没有键鼠操作。", automatic: true, credit: false, resumeOnActivity: true)
+                pause(reason: "连续 \(idleMinutes) 分钟没有键鼠操作。", automatic: true, credit: false, resumeOnActivity: true)
                 return
             }
             if let previous = state.lastTick, Date().timeIntervalSince(previous) > 15 {

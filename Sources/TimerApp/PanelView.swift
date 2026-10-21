@@ -13,6 +13,7 @@ struct PanelView: View {
                 if store.showsSettings || store.showsWasteTime {
                     headerButton("chevron.left", label: "返回计时") {
                         store.showsSettings = false
+                        store.showsHistory = false
                         store.showsWasteTime = false
                     }
                 } else {
@@ -36,6 +37,36 @@ struct PanelView: View {
         }
         .frame(width: 260)
 
+    }
+
+    private var history: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("历史总时长").foregroundStyle(.secondary)
+                Spacer()
+                Text(TimeText.clock(store.totalSeconds)).monospacedDigit()
+            }.font(.system(size: 12, weight: .medium))
+            let records = store.dailyRecords
+            if records.isEmpty {
+                Text("暂无记录").font(.system(size: 12)).foregroundStyle(.secondary)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        ForEach(records, id: \.day) { record in
+                            HStack {
+                                Text(record.day).foregroundStyle(.secondary)
+                                Spacer()
+                                Text(TimeText.clock(record.seconds)).monospacedDigit()
+                            }.font(.system(size: 12))
+                        }
+                    }
+                    .padding(.vertical, 3)
+                }
+                // Hidden so the durations stay aligned with the total above; the cut-off row hints at more.
+                .scrollIndicators(.hidden)
+                .frame(height: min(108, CGFloat(records.count) * 26))
+            }
+        }
     }
 
     private func headerButton(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
@@ -98,51 +129,26 @@ struct PanelView: View {
 
     private var settings: some View {
         VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("历史总时长").font(.system(size: 11)).foregroundStyle(.secondary)
-                Text(TimeText.clock(store.totalSeconds))
-                    .font(.system(size: 24, weight: .light, design: .rounded)).monospacedDigit()
-            }
-            let records = store.dailyRecords
-            VStack(alignment: .leading, spacing: 8) {
-                if records.isEmpty {
-                    Text("暂无记录").font(.system(size: 12)).foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 10) {
-                            ForEach(records, id: \.day) { record in
-                                HStack {
-                                    Text(record.day).foregroundStyle(.secondary)
-                                    Spacer()
-                                    Text(TimeText.clock(record.seconds)).monospacedDigit()
-                                }.font(.system(size: 12))
-                            }
-                        }
-                        .padding(.vertical, 3)
-                    }
-                    // Hidden so the durations stay aligned with the total above; the cut-off row hints at more.
-                    .scrollIndicators(.hidden)
-                    .frame(height: min(84, CGFloat(records.count) * 26))
-                }
-            }
             HourlyActivityView(state: store.state)
             Divider()
-            LoginItemToggle().font(.system(size: 11))
-            HStack(spacing: 12) {
-                Picker("闲置暂停", selection: Binding(get: { store.state.settings.idleMinutes }, set: { value in
-                    store.updateSettings { $0.idleMinutes = value }
-                })) {
-                    Text("关闭").tag(0)
-                    Text("5 分钟").tag(5)
-                    Text("10 分钟").tag(10)
-                    Text("15 分钟").tag(15)
-                }.fixedSize()
-                Spacer(minLength: 0)
+            HStack {
+                Button { store.showsHistory.toggle() } label: {
+                    HStack(spacing: 4) {
+                        Text("历史记录")
+                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                            .rotationEffect(.degrees(store.showsHistory ? 90 : 0))
+                    }
+                }
+                .buttonStyle(QuietHoverButtonStyle(horizontalPadding: 7))
+                .padding(.leading, -7)
+                .accessibilityLabel(store.showsHistory ? "收起历史记录" : "展开历史记录")
+                Spacer()
                 Button("退出") { NSApplication.shared.terminate(nil) }
                     .buttonStyle(QuietHoverButtonStyle(horizontalPadding: 7))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .padding(.trailing, -7)
             }
+            .font(.system(size: 11)).foregroundStyle(.secondary)
+            if store.showsHistory { history }
         }
         .font(.system(size: 12))
         .padding(.horizontal, 16).padding(.bottom, 14)

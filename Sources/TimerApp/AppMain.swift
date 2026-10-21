@@ -26,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var subscription: AnyCancellable?
     private var noticeSizing: AnyCancellable?
     private var wasteSizing: AnyCancellable?
+    private var historySizing: AnyCancellable?
     private var pendingPanelRequest = false
     private var toggleHotKey: GlobalHotKey?
     /// The panel was raised by an automatic pause, not by the user.
@@ -34,7 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        LoginItem.applyDefault()
+        LoginItem.ensureEnabled()
         // ⌥T starts or pauses from anywhere, the same as the panel's main button.
         toggleHotKey = GlobalHotKey(keyCode: kVK_ANSI_T, modifiers: optionKey) { [weak self] in self?.store.toggle() }
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -66,6 +67,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async { self?.resizePanel() }
         }
         wasteSizing = store.$showsWasteTime.sink { [weak self] _ in
+            DispatchQueue.main.async { self?.resizePanel() }
+        }
+        historySizing = store.$showsHistory.sink { [weak self] _ in
             DispatchQueue.main.async { self?.resizePanel() }
         }
         store.onAutomaticPause = { [weak self] brief in
