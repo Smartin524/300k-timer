@@ -81,12 +81,15 @@ final class FocusStore: ObservableObject {
             })
         }
         observe(NSWorkspace.willSleepNotification) {
+            $0.noteInput()
             $0.isSleeping = true
             $0.interruptBrowserObservation()
             $0.pause(reason: "电脑已休眠。", automatic: true, alert: false, resumeOnActivity: true)
         }
         observe(NSWorkspace.didWakeNotification) {
             $0.isSleeping = false
+            // Idle counters exclude sleep time, so they cannot date the gap; a full wake is the user returning.
+            $0.noteInput(input: Date())
             $0.refreshDay()
             $0.attemptAutomaticResume()
         }
@@ -266,10 +269,19 @@ final class FocusStore: ObservableObject {
             max(0, now.timeIntervalSince(lastObservedInput)))
     }
 
-    /// Feed the latest input time to sleep detection.
-    private func noteInput(at now: Date = Date()) {
-        let idle = inputIdle(at: now)
-        guard idle.isFinite, idle >= 0, state.observeInput(at: now.addingTimeInterval(-idle)) else { return }
+    /// Feed the latest input time to sleep detection. While the Mac sleeps (including its periodic
+    /// dark wakes) idle counters stop advancing and would misdate input, so they are ignored.
+    private func noteInput(at now: Date = Date(), input explicitInput: Date? = nil) {
+        guard !isSleeping else { return }
+        let input: Date
+        if let explicitInput {
+            input = explicitInput
+        } else {
+            let idle = inputIdle(at: now)
+            guard idle.isFinite, idle >= 0 else { return }
+            input = now.addingTimeInterval(-idle)
+        }
+        guard state.observeInput(at: input) else { return }
         pauseNotice = nil
         scheduleTimer(running: state.isRunning)
         persist()
