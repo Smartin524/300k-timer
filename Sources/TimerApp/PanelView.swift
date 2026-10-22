@@ -168,12 +168,22 @@ private struct SolidIconButtonStyle: ButtonStyle {
         }
     }
 
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.colorScheme) private var colorScheme
     let tint: Tint?
-    @State private var isHovered = false
 
     func makeBody(configuration: Configuration) -> some View {
+        SolidIconButton(configuration: configuration, tint: tint)
+    }
+}
+
+/// Hover state lives in a real view; @State on a ButtonStyle is not reliably retained.
+private struct SolidIconButton: View {
+    let configuration: ButtonStyleConfiguration
+    let tint: SolidIconButtonStyle.Tint?
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var isHovered = false
+
+    var body: some View {
         configuration.label
             .foregroundStyle(tint == nil ? Color.primary : Color.white)
             .background {
@@ -189,7 +199,6 @@ private struct SolidIconButtonStyle: ButtonStyle {
             .drawingGroup()
             .opacity(isEnabled ? 1 : 0.3)
             .contentShape(Circle())
-            .onHover { isHovered = $0 }
-            .onDisappear { isHovered = false }
+            .trackingHover { isHovered = $0 }
     }
 }
