@@ -22,6 +22,16 @@ final class MaterialHostingController<Content: View>: NSViewController {
         surface.material = .popover
         surface.blendingMode = .behindWindow
         surface.state = .active
+        // The popover material alone reads gray in light mode; a white wash brightens it.
+        let wash = LightWash()
+        wash.translatesAutoresizingMaskIntoConstraints = false
+        surface.addSubview(wash)
+        NSLayoutConstraint.activate([
+            wash.leadingAnchor.constraint(equalTo: surface.leadingAnchor),
+            wash.trailingAnchor.constraint(equalTo: surface.trailingAnchor),
+            wash.topAnchor.constraint(equalTo: surface.topAnchor),
+            wash.bottomAnchor.constraint(equalTo: surface.bottomAnchor)
+        ])
         surface.addSubview(hostingView)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -48,5 +58,21 @@ private final class RoundedPopoverMaterial: NSVisualEffectView {
             NSBezierPath(roundedRect: bounds, xRadius: 14, yRadius: 14).fill()
             return true
         }
+    }
+}
+
+/// Semi-opaque white over the material in light mode only; dark mode keeps the plain material.
+private final class LightWash: NSView {
+    override var wantsUpdateLayer: Bool { true }
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    override func updateLayer() {
+        let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        layer?.backgroundColor = isDark ? nil : NSColor.white.withAlphaComponent(0.6).cgColor
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        needsDisplay = true
     }
 }
