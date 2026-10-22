@@ -107,7 +107,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panelShownForPause = false
         briefDismissal?.cancel()
         store.refreshDay()
-        store.hoverReset += 1
         resizePanel()
         positionPanel()
         // Keep the browser frontmost while inspecting statistics or handling a pause.
@@ -140,7 +139,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func resizePanel() {
         guard let view = panel?.contentViewController?.view else { return }
-        if panel.isVisible { store.hoverReset += 1 }
         panel.setContentSize(view.fittingSize)
         panel.invalidateShadow()
         if panel.isVisible { positionPanel() }

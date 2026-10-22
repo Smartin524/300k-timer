@@ -21,7 +21,7 @@ struct HourlyActivityView: View {
                 Button { moveDay(1) } label: { Image(systemName: "chevron.right").frame(width: 20, height: 20) }
                     .disabled(StudyDay.start(for: selectedDate) >= StudyDay.start(for: Date()))
                     .accessibilityLabel("后一天")
-            }.buttonStyle(QuietHoverButtonStyle()).font(.system(size: 10)).foregroundStyle(.secondary)
+            }.buttonStyle(QuietButtonStyle()).font(.system(size: 10)).foregroundStyle(.secondary)
             HStack(spacing: 12) {
                 legend("学习", color: .studyTime)
                 legend("摸鱼时间", color: .wasteTime)

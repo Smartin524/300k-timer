@@ -36,7 +36,6 @@ struct PanelView: View {
             }
         }
         .frame(width: 260)
-        .environment(\.hoverReset, store.hoverReset)
 
     }
 
@@ -74,7 +73,7 @@ struct PanelView: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 12)).frame(width: 24, height: 24)
         }
-        .buttonStyle(QuietHoverButtonStyle())
+        .buttonStyle(QuietButtonStyle())
         .foregroundStyle(.secondary)
         .accessibilityLabel(label)
         .help(label)
@@ -140,12 +139,12 @@ struct PanelView: View {
                             .rotationEffect(.degrees(store.showsHistory ? 90 : 0))
                     }
                 }
-                .buttonStyle(QuietHoverButtonStyle(horizontalPadding: 7))
+                .buttonStyle(QuietButtonStyle(horizontalPadding: 7))
                 .padding(.leading, -7)
                 .accessibilityLabel(store.showsHistory ? "收起历史记录" : "展开历史记录")
                 Spacer()
                 Button("退出") { NSApplication.shared.terminate(nil) }
-                    .buttonStyle(QuietHoverButtonStyle(horizontalPadding: 7))
+                    .buttonStyle(QuietButtonStyle(horizontalPadding: 7))
                     .padding(.trailing, -7)
             }
             .font(.system(size: 11)).foregroundStyle(.secondary)
@@ -181,8 +180,6 @@ private struct SolidIconButton: View {
     let configuration: ButtonStyleConfiguration
     let tint: SolidIconButtonStyle.Tint?
     @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.colorScheme) private var colorScheme
-    @State private var isHovered = false
 
     var body: some View {
         configuration.label
@@ -192,14 +189,12 @@ private struct SolidIconButton: View {
                     .overlay {
                         // Apply feedback to the fill only, keeping the glyph crisp.
                         Circle().fill(tint == nil ? Color.primary : Color.black)
-                            .opacity(!isEnabled ? 0 : configuration.isPressed ? 0.20 :
-                                isHovered ? (colorScheme == .dark ? 0.12 : 0.08) : 0)
+                            .opacity(isEnabled && configuration.isPressed ? 0.20 : 0)
                     }
             }
             // Flatten only the button, not the native glass backdrop.
             .drawingGroup()
             .opacity(isEnabled ? 1 : 0.3)
             .contentShape(Circle())
-            .trackingHover { isHovered = $0 }
     }
 }

@@ -15,8 +15,6 @@ final class FocusStore: ObservableObject {
     @Published var showsSettings = false
     /// History is collapsed whenever the statistics page opens.
     @Published var showsHistory = false
-    /// See EnvironmentValues.hoverReset.
-    @Published var hoverReset = 0
     /// Fixed idle threshold; the stored setting is kept only so older records still decode.
     private let idleMinutes = 10
     @Published var pauseNotice: String?
