@@ -1,79 +1,36 @@
-import AppKit
 import SwiftUI
 
+extension EnvironmentValues {
+    /// Bumped whenever the panel opens or resizes. A still cursor gets no exit event when the
+    /// panel moves or swaps controls beneath it, so hover states clear here and re-light on the
+    /// next pointer movement.
+    @Entry var hoverReset = 0
+}
+
 extension View {
-    /// Reliable hover for a non-activating panel. SwiftUI's onHover only reacts to edge crossings,
-    /// so it misses changes when the panel moves, resizes, hides, or swaps controls under a still
-    /// cursor, and may not fire while the app is inactive. This re-checks the real cursor position.
+    /// Pure SwiftUI hover: no extra AppKit views inside the glass, whose interactive
+    /// response would otherwise make the whole panel brighten.
     func trackingHover(_ action: @escaping (Bool) -> Void) -> some View {
-        overlay(HoverTracker(onChange: action).allowsHitTesting(false))
+        modifier(HoverModifier(action: action))
     }
 }
 
-private struct HoverTracker: NSViewRepresentable {
-    let onChange: (Bool) -> Void
+private struct HoverModifier: ViewModifier {
+    let action: (Bool) -> Void
+    @Environment(\.hoverReset) private var reset
 
-    func makeNSView(context: Context) -> HoverTrackingView {
-        let view = HoverTrackingView()
-        view.onChange = onChange
-        return view
-    }
-
-    func updateNSView(_ view: HoverTrackingView, context: Context) {
-        view.onChange = onChange
-    }
-}
-
-private final class HoverTrackingView: NSView {
-    var onChange: ((Bool) -> Void)?
-    private var isHovered = false
-    private var observers: [NSObjectProtocol] = []
-
-    // Purely observational: clicks pass through to the control underneath.
-    override func hitTest(_ point: NSPoint) -> NSView? { nil }
-
-    // AppKit calls this whenever the view's geometry or visible rect changes.
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        trackingAreas.forEach(removeTrackingArea)
-        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
-                                       owner: self, userInfo: nil))
-        refresh()
-    }
-
-    override func mouseEntered(with event: NSEvent) { refresh() }
-    override func mouseExited(with event: NSEvent) { refresh() }
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        observers.forEach(NotificationCenter.default.removeObserver)
-        observers.removeAll()
-        if let window {
-            for name in [NSWindow.didMoveNotification, NSWindow.didResizeNotification,
-                         NSWindow.didBecomeKeyNotification, NSWindow.didResignKeyNotification,
-                         NSWindow.didChangeOcclusionStateNotification] {
-                observers.append(NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { [weak self] _ in
-                    MainActor.assumeIsolated { self?.refresh() }
-                })
+    func body(content: Content) -> some View {
+        content
+            // Continuous updates also catch a cursor that was already inside when the view appeared.
+            .onContinuousHover { phase in
+                switch phase {
+                case .active: action(true)
+                case .ended: action(false)
+                }
             }
-        }
-        refresh()
+            .onChange(of: reset) { action(false) }
+            .onDisappear { action(false) }
     }
-
-    private func refresh() {
-        let hovered: Bool
-        if let window, window.isVisible, window.occlusionState.contains(.visible), !isHiddenOrHasHiddenAncestor {
-            hovered = bounds.contains(convert(window.mouseLocationOutsideOfEventStream, from: nil))
-        } else {
-            hovered = false
-        }
-        guard hovered != isHovered else { return }
-        isHovered = hovered
-        // Report outside SwiftUI's update pass.
-        DispatchQueue.main.async { [weak self] in self?.onChange?(hovered) }
-    }
-
-    deinit { observers.forEach(NotificationCenter.default.removeObserver) }
 }
 
 struct QuietHoverButtonStyle: ButtonStyle {

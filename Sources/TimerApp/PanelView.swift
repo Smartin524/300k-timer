@@ -36,6 +36,7 @@ struct PanelView: View {
             }
         }
         .frame(width: 260)
+        .environment(\.hoverReset, store.hoverReset)
 
     }
 

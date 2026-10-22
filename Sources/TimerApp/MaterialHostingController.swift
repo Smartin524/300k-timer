@@ -21,6 +21,8 @@ final class MaterialHostingController<Content: View>: NSViewController {
             let glass = NSGlassEffectView()
             glass.style = .regular
             glass.cornerRadius = 14
+            // A static backdrop: the panel itself must not light up under the pointer.
+            if #available(macOS 27.0, *) { glass.effectIsInteractive = false }
             // Match the backing's silhouette to the glass, so the window shadow
             // follows the rounded panel instead of exposing rectangular corners.
             glass.wantsLayer = true
