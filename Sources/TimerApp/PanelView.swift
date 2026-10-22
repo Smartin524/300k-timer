@@ -175,7 +175,7 @@ private struct SolidIconButtonStyle: ButtonStyle {
     }
 }
 
-/// Hover state lives in a real view; @State on a ButtonStyle is not reliably retained.
+/// Press feedback is applied to the fill only.
 private struct SolidIconButton: View {
     let configuration: ButtonStyleConfiguration
     let tint: SolidIconButtonStyle.Tint?
