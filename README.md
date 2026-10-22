@@ -49,7 +49,7 @@ swift run TimerCoreChecks
 
 应用图标是透明底的绿色系统沙漏，浅色与深色背景共用同一图形，不含文字或底板。
 
-面板为 260 pt 紧凑宽度；macOS 26 使用 AppKit NSGlassEffectView 的 regular 材质直接承载内容，旧系统使用 NSVisualEffectView 的 popover 材质；不降低材质透明度，不叠加 SwiftUI 背景。
+面板为 260 pt 紧凑宽度，统一使用 NSVisualEffectView 的 popover 材质（macOS 26+ 的玻璃材质会在每次内容刷新时重新合成，造成整面板闪动，因此不用）；不降低材质透明度，不叠加 SwiftUI 背景。
 
 
 闲置检测综合硬件与会话事件源、鼠标和滚动事件；无需切换标签页，也不读取输入内容。
