@@ -96,8 +96,6 @@ struct PanelView: View {
                 if store.pauseNotice != nil { keepPausedButton }
                 primaryButton
             }
-            Text("今日 \(TimeText.compact(store.today))")
-                .font(.system(size: 11)).foregroundStyle(.secondary)
         }.padding(.horizontal, 16).padding(.bottom, 14)
     }
 

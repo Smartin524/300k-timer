@@ -27,6 +27,25 @@ final class StatusSymbolController {
         updateAppearance()
     }
 
+    /// A gentle pulse while a one-click resume is offered.
+    func setBlinking(_ blinking: Bool) {
+        imageView.wantsLayer = true
+        guard let layer = imageView.layer else { return }
+        if blinking {
+            let pulse = CABasicAnimation(keyPath: "opacity")
+            pulse.fromValue = 1
+            pulse.toValue = 0.2
+            pulse.duration = 0.45
+            pulse.autoreverses = true
+            pulse.repeatCount = .infinity
+            layer.add(pulse, forKey: "quickResume")
+            button?.toolTip = "点击继续计时"
+        } else {
+            layer.removeAnimation(forKey: "quickResume")
+            button?.toolTip = phase.title + " · 点击打开"
+        }
+    }
+
     private func updateAppearance() {
         let name = phase == .running ? "hourglass.bottomhalf.filled" : "hourglass"
         let symbol = NSImage(systemSymbolName: name, accessibilityDescription: nil)?

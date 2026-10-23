@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var noticeSizing: AnyCancellable?
     private var wasteSizing: AnyCancellable?
     private var historySizing: AnyCancellable?
+    private var quickResumeBlink: AnyCancellable?
     private var pendingPanelRequest = false
     private var toggleHotKey: GlobalHotKey?
     /// The panel was raised by an automatic pause, not by the user.
@@ -63,6 +64,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         subscription = store.$state.map(\.phase).removeDuplicates().sink { [weak self] phase in
             self?.statusSymbol.setPhase(phase)
         }
+        quickResumeBlink = store.$offersQuickResume.removeDuplicates().sink { [weak self] offered in
+            self?.statusSymbol.setBlinking(offered)
+        }
         noticeSizing = store.$pauseNotice.sink { [weak self] _ in
             DispatchQueue.main.async { self?.resizePanel() }
         }
@@ -94,6 +98,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func togglePanel() {
+        // While the icon blinks after leaving a distracting site, a click resumes directly.
+        if store.offersQuickResume {
+            store.resume()
+            panel.orderOut(nil)
+            return
+        }
         if panel.isVisible { panel.orderOut(nil) } else { showPanel() }
     }
 

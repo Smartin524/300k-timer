@@ -15,6 +15,13 @@ final class FocusStore: ObservableObject {
     @Published var showsSettings = false
     /// History is collapsed whenever the statistics page opens.
     @Published var showsHistory = false
+    /// After a website pause, staying off the site for a few seconds offers a one-click
+    /// resume from the menu-bar icon for a short window.
+    @Published private(set) var offersQuickResume = false
+    private var pausedForWebsite = false
+    private var leftWebsiteAt: Date?
+    private var quickResumeOffered = false
+    private var quickResumeGeneration = 0
     /// Fixed idle threshold; the stored setting is kept only so older records still decode.
     private let idleMinutes = 10
     @Published var pauseNotice: String?
@@ -131,7 +138,6 @@ final class FocusStore: ObservableObject {
         persist()
     }
 
-    var today: TimeInterval { state.todaySeconds() }
     var totalSeconds: TimeInterval { state.secondsByDay.values.reduce(0, +) }
     var dailyRecords: [(day: String, seconds: TimeInterval)] {
         state.studySecondsByDay().filter { $0.value > 0 }
@@ -145,6 +151,7 @@ final class FocusStore: ObservableObject {
 
     func resume() {
         guard !state.isRunning else { return }
+        endQuickResume()
         noteInput()
         pauseNotice = nil
         runGeneration += 1
@@ -211,6 +218,7 @@ final class FocusStore: ObservableObject {
     }
 
     func keepPaused() {
+        endQuickResume()
         state.cancelAutomaticResume()
         pauseNotice = nil
         runGeneration += 1
@@ -282,6 +290,7 @@ final class FocusStore: ObservableObject {
             input = now.addingTimeInterval(-idle)
         }
         guard state.observeInput(at: input) else { return }
+        endQuickResume()
         pauseNotice = nil
         scheduleTimer(running: state.isRunning)
         persist()
@@ -312,6 +321,9 @@ final class FocusStore: ObservableObject {
               inputIdle(at: now) < 300 else {
             lastBrowserObservation = nil
             recordWaste(site: nil, at: now)
+            // Another app in front counts as having left the site; an absent user does not.
+            let away = isSleeping || isLocked || !isSessionActive || inputIdle(at: now) >= 300
+            updateQuickResume(onDistraction: away ? nil : false, at: now)
             return
         }
         let generation = browserGeneration
@@ -331,6 +343,7 @@ final class FocusStore: ObservableObject {
             guard let address, !address.isEmpty else {
                 self.lastBrowserObservation = nil
                 self.recordWaste(site: nil)
+                self.updateQuickResume(onDistraction: false)
                 return
             }
             let blockedSite = DistractionPolicy.siteName(for: address)
@@ -338,10 +351,52 @@ final class FocusStore: ObservableObject {
             self.recordWaste(site: WasteSite.match(address))
             if self.state.isRunning, let blockedSite {
                 self.pause(reason: "正在浏览\(blockedSite)。", automatic: true, briefAlert: true)
+                self.pausedForWebsite = true
             } else {
                 self.attemptAutomaticResume()
             }
+            self.updateQuickResume(onDistraction: blockedSite != nil)
         }
+    }
+
+    /// `onDistraction`: nil when the observation is unknown (failed read, user away).
+    private func updateQuickResume(onDistraction: Bool?, at now: Date = Date()) {
+        guard pausedForWebsite, !state.isRunning else {
+            endQuickResume()
+            return
+        }
+        guard let onDistraction else { return }
+        if onDistraction {
+            // Back on the site: a later departure may offer again.
+            leftWebsiteAt = nil
+            quickResumeOffered = false
+            stopQuickResumeOffer()
+            return
+        }
+        guard !quickResumeOffered else { return }
+        let left = leftWebsiteAt ?? now
+        leftWebsiteAt = left
+        guard now.timeIntervalSince(left) >= 3 else { return }
+        quickResumeOffered = true
+        offersQuickResume = true
+        quickResumeGeneration += 1
+        let generation = quickResumeGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8) { [weak self] in
+            guard let self, generation == self.quickResumeGeneration else { return }
+            self.offersQuickResume = false
+        }
+    }
+
+    private func stopQuickResumeOffer() {
+        quickResumeGeneration += 1
+        if offersQuickResume { offersQuickResume = false }
+    }
+
+    private func endQuickResume() {
+        pausedForWebsite = false
+        leftWebsiteAt = nil
+        quickResumeOffered = false
+        stopQuickResumeOffer()
     }
 
     func shutdown() {
