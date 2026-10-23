@@ -115,11 +115,14 @@ struct FocusStateTests {
                             ("https://b23.tv/a", .bilibili), ("https://tieba.baidu.com/p/a", .tieba),
                             ("https://www.douyu.com/1", .douyu), ("https://xhslink.com/a", .xiaohongshu),
                             ("https://www.xiaohongshu.com/explore/a", .xiaohongshu),
-                            ("https://x.com/home", .x), ("https://mobile.twitter.com/a", .x)] {
+                            ("https://x.com/home", .x), ("https://mobile.twitter.com/a", .x),
+                            ("https://lol.fandom.com/wiki/LCK", .leaguepedia)] {
+            // Every distracting site both counts as 摸鱼 and pauses study.
+            expectEqual(DistractionPolicy.siteName(for: url), site.title)
             expectEqual(WasteSite.match(url), site)
         }
         for url in ["https://x.com.evil.com", "https://notdouyu.com", "https://baidu.com",
-                    "https://example.com/?next=x.com", "file:///x.com", "https://leaguepedia.com"] {
+                    "https://example.com/?next=x.com", "file:///x.com", "https://other.fandom.com"] {
             expectNil(WasteSite.match(url))
         }
     }

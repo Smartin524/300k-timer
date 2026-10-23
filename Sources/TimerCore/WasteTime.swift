@@ -1,7 +1,7 @@
 import Foundation
 
 public enum WasteSite: String, Codable, CaseIterable, Sendable {
-    case bilibili, tieba, douyu, xiaohongshu, x
+    case bilibili, tieba, douyu, xiaohongshu, x, leaguepedia
 
     public var title: String {
         switch self {
@@ -10,11 +10,12 @@ public enum WasteSite: String, Codable, CaseIterable, Sendable {
         case .douyu: return "斗鱼"
         case .xiaohongshu: return "小红书"
         case .x: return "X"
+        case .leaguepedia: return "Leaguepedia"
         }
     }
 
     public static func match(_ address: String) -> WasteSite? {
-        SiteCatalog.entry(for: address)?.waste
+        SiteCatalog.site(for: address)
     }
 }
 
