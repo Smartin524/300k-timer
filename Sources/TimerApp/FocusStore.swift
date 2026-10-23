@@ -376,7 +376,7 @@ final class FocusStore: ObservableObject {
         guard !quickResumeOffered else { return }
         let left = leftWebsiteAt ?? now
         leftWebsiteAt = left
-        guard now.timeIntervalSince(left) >= 3 else { return }
+        guard now.timeIntervalSince(left) >= 5 else { return }
         quickResumeOffered = true
         offersQuickResume = true
         quickResumeGeneration += 1
